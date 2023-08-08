@@ -108,7 +108,7 @@ public:
     void saveCheckpoint(Checkpoint *ckp) {
         stringstream ostr;
         ostr.precision(10);
-        ostr << logl << " " << df << " " << tree_len;
+        ostr << logl << " " << df << " " << tree_len << " Parameters: " << model_para << " " << model_rate;
         if (!tree.empty())
             ostr << " " << tree;
         ckp->put(getName(), ostr.str());
@@ -167,6 +167,9 @@ public:
     bool AIC_conf, AICc_conf, BIC_conf;         // in confidence set?
 
     Alignment *aln; // associated alignment
+
+    string model_para; // model parameters 
+    string model_rate; // model rate parameters
     
 protected:
     

@@ -45,6 +45,7 @@
 #include "utils/MPIHelper.h"
 //#include "vectorclass/vectorclass.h"
 
+#include <boost/algorithm/string/replace.hpp>
 
 /******* Binary model set ******/
 const char* bin_model_names[] = {"GTR2", "JC2"};
@@ -674,7 +675,25 @@ string computeFastMLTree(Params &params, Alignment *aln,
         iqtree->getCheckpoint()->putBool("finishedFastMLTree", true);
         iqtree->getCheckpoint()->dump();
         //        cout << "initTree: " << initTree << endl;
+        RateHeterogeneity *fra_init_rate = iqtree->getRate();
+        if (fra_init_rate->isGammaRate()) {
+
+            cout << "Site proportion and rates:  ";
+
+            int fra_cats = fra_init_rate->getNDiscreteRate();
+            DoubleVector fra_init_prop;
+            fra_init_prop.resize(fra_cats);
+            for (size_t i = 0; i < fra_cats; i++) {
+                fra_init_prop[i] = fra_init_rate->getProp(i);
+            }
+
+            for (size_t i = 0; i < fra_cats; i++) {
+                cout << "(" << fra_init_prop[i] << ", " << fra_init_rate->getRate(i) << ") ";
+            }
+        } 
+        cout << endl;
         cout << "Time for fast ML tree search: " << getRealTime() - start_time << " seconds" << endl;
+        cout << "initTree: " << initTree << endl;
         cout << endl;
     }
 
@@ -1693,6 +1712,33 @@ string CandidateModel::evaluate(Params &params,
     df += iqtree->getModelFactory()->getNParameters(brlen_type);
     logl += new_logl;
     string tree_string = iqtree->getTreeString();
+
+    stringstream temp_stringstream1; 
+    stringstream temp_stringstream2; 
+    iqtree->getModel()->writeInfo(temp_stringstream1); 
+    iqtree->getRate()->writeInfo(temp_stringstream2);
+
+    RateHeterogeneity *fra_rate_model = iqtree->getRate();
+    if (fra_rate_model->isGammaRate()) {
+
+        temp_stringstream2 << "Site proportion and rates:  ";
+
+        int fra_cats = fra_rate_model->getNDiscreteRate();
+        DoubleVector fra_prop;
+        fra_prop.resize(fra_cats);
+        for (size_t i = 0; i < fra_cats; i++) {
+            fra_prop[i] = fra_rate_model->getProp(i);
+        }
+
+        for (size_t i = 0; i < fra_cats; i++) {
+            temp_stringstream2 << "(" << fra_prop[i] << ", " << fra_rate_model->getRate(i) << ") ";
+        }
+    }
+
+    model_para = temp_stringstream1.str();
+    model_rate = temp_stringstream2.str();
+    boost::replace_all(model_para, "\n", " ");
+    boost::replace_all(model_rate, "\n", " ");
 
 #ifdef _OPENMP
 #pragma omp critical
